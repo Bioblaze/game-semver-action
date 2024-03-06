@@ -2,15 +2,20 @@
   "name": "game-semver-action",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "build": "ncc build ./src/index.js -o dist"
+    "build": "tsc",
+    "package": "ncc build --source-map --license licenses.txt"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bioblaze/game-semver-action.git"
   },
-  "keywords": [],
+  "keywords": [
+    "actions",
+    "versioning",
+    "semver"
+  ],
   "author": "Randolph William Aarseth II <randolph@divine.games>",
   "license": "MIT",
   "bugs": {
@@ -23,6 +28,11 @@
     "semver": "^7.6.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.34.0"
+    "@vercel/ncc": "^0.34.0",
+    "@types/node": "^18.11.9",
+    "@types/semver": "^7.3.13",
+    "js-yaml": "^4.1.0",
+    "prettier": "2.7.1",
+    "typescript": "^4.9.3"
   }
 }

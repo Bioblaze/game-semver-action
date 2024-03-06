@@ -1,5 +1,185 @@
-/******/ (() => { // webpackBootstrap
+require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
+
+/***/ 4822:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const github = __importStar(__nccwpck_require__(5438));
+const core = __importStar(__nccwpck_require__(2186));
+const semver_1 = __nccwpck_require__(1383);
+function getCurrentBranch() {
+    const ref = github.context.ref;
+    const refArray = ref.split('/');
+    if (refArray[1] === 'heads') {
+        const branchName = refArray.slice(2).join('/');
+        core.debug(`The current branch is ${branchName}`);
+        return branchName;
+    }
+    else {
+        core.debug('Not a branch push event.');
+        return null;
+    }
+}
+function getMergedPRBranch() {
+    var _a, _b;
+    const eventName = github.context.eventName;
+    const payload = github.context.payload;
+    if (eventName === 'pull_request' && payload.action === 'closed' && ((_a = payload.pull_request) === null || _a === void 0 ? void 0 : _a.merged)) {
+        const baseBranch = (_b = payload.pull_request) === null || _b === void 0 ? void 0 : _b.base.ref;
+        core.debug(`Pull request was merged into the branch: ${baseBranch}`);
+        return baseBranch;
+    }
+    else {
+        core.debug('This workflow was not triggered by a merged pull request.');
+        return null;
+    }
+}
+function getEventSHA() {
+    const eventName = github.context.eventName;
+    let sha = null;
+    if (eventName === 'push') {
+        sha = github.context.sha;
+    }
+    else if (eventName === 'pull_request') {
+        const payload = github.context.payload;
+        if (payload.action === 'closed' && payload.pull_request.merged) {
+            sha = payload.pull_request.head.sha;
+        }
+    }
+    else {
+        core.debug(`Event type ${eventName} is not explicitly handled in this example.`);
+    }
+    if (sha) {
+        core.debug(`The SHA for the ${eventName} event is: ${sha}`);
+    }
+    return sha;
+}
+function isPullRequestMerge() {
+    const eventName = github.context.eventName;
+    const payload = github.context.payload;
+    if (eventName === 'pull_request' && payload.action === 'closed' && payload.pull_request.merged) {
+        core.debug('This workflow was triggered by a pull request merge.');
+        return true;
+    }
+    core.debug('This workflow was not triggered by a pull request merge.');
+    return false;
+}
+function isSemVarLabel(label) {
+    return ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'].includes(label);
+}
+function getAndLogCommits() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            let version = new semver_1.SemVer('0.0.0');
+            const token = core.getInput('personal_github_token', { required: true });
+            const identifier = core.getInput('identifier', { required: false }) || "";
+            const branchAsIdentifier = core.getInput('branch_as_identifier', { required: false }) === 'true';
+            const includeCommitSha = core.getInput('include_commit_sha', { required: false }) === 'true';
+            const octokit = github.getOctokit(token);
+            const branch = getCurrentBranch() || (yield getMergedPRBranch());
+            if (!branch) {
+                core.debug(`No Branch Found, this will cause an error with generation, pulling from the Main/Master Branch and not the Branch for this Action.`);
+                return;
+            }
+            const commits = yield octokit.rest.repos.listCommits({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                sha: branch,
+            });
+            const tags = yield octokit.rest.repos.listTags({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+            });
+            // Process each commit for versioning cues
+            for (const commit of commits.data) {
+                core.debug(`Commit message: ${commit.commit.message}`);
+                const regex = /#(major|minor|patch|premajor|preminor|prepatch|prerelease)/ig;
+                const matches = commit.commit.message.match(regex);
+                if (matches && matches.length > 0) {
+                    let label = matches[0].toLowerCase().replace("#", "");
+                    if (isSemVarLabel(label)) {
+                        version.inc(label);
+                    }
+                    else {
+                        version.inc('patch');
+                    }
+                }
+                else {
+                    version.inc('patch');
+                }
+            }
+            // Now check for tags that might affect the current version
+            tags.data.forEach(tag => {
+                let parsedTagVersion = (0, semver_1.parse)(tag.name, true);
+                if (parsedTagVersion && (0, semver_1.gt)(parsedTagVersion, version)) {
+                    version = parsedTagVersion;
+                }
+            });
+            if (branchAsIdentifier && branch) {
+                version.prerelease = [branch.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
+            }
+            if (identifier) {
+                version.prerelease = [identifier.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
+            }
+            if (includeCommitSha) {
+                const sha = yield getEventSHA();
+                if (sha) {
+                    version.build = [`sha.${sha}`];
+                }
+            }
+            let newVersion = version.format();
+            core.exportVariable('version', newVersion);
+            core.setOutput('version', newVersion);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                core.setFailed(`An error occurred: ${error.message}`);
+            }
+            else {
+                core.setFailed(`An unknown error occurred`);
+            }
+        }
+    });
+}
+getAndLogCommits();
+
+
+/***/ }),
 
 /***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
@@ -34375,186 +34555,13 @@ module.exports = parseParams
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
-(() => {
-const github = __nccwpck_require__(5438);
-const core = __nccwpck_require__(2186);
-
-const semver = __nccwpck_require__(1383)
-
-function getCurrentBranch() {
-    const ref = github.context.ref;
-    const refArray = ref.split('/');
-    if (refArray[1] === 'heads') {
-      const branchName = refArray.slice(2).join('/');
-      core.debug(`The current branch is ${branchName}`);
-      return branchName;
-    } else {
-      core.debug('Not a branch push event.');
-      return null;
-    }
-}
-
-function getMergedPRBranch() {
-    const eventName = github.context.eventName;
-    const payload = github.context.payload;
-  
-    // Ensure the event is a pull request and it is merged
-    if (eventName === 'pull_request' && payload.action === 'closed' && payload.pull_request.merged) {
-      const baseBranch = payload.pull_request.base.ref; // Target branch the PR is merged into
-      core.debug(`Pull request was merged into the branch: ${baseBranch}`);
-      return baseBranch;
-    } else {
-      core.debug('This workflow was not triggered by a merged pull request.');
-      return null;
-    }
-}
-
-function getEventSHA() {
-    const eventName = github.context.eventName;
-    let sha;
-  
-    if (eventName === 'push') {
-      // For push events, the SHA is directly available
-      sha = github.context.sha;
-    } else if (eventName === 'pull_request' && payload.action === 'closed' && payload.pull_request.merged) {
-      // For pull request events, use the SHA of the latest commit of the PR
-      sha = github.context.payload.pull_request.head.sha;
-    } else {
-      // For other events, you might need to adjust this logic
-      core.debug(`Event type ${eventName} is not explicitly handled in this example.`);
-      return null;
-    }
-  
-    core.debug(`The SHA for the ${eventName} event is: ${sha}`);
-    return sha;
-  }
-
-
-function isPullRequestMerge() {
-    const eventName = github.context.eventName;
-    const payload = github.context.payload;
-
-    // Check if the event is a pull request
-    if (eventName === 'pull_request') {
-        const action = payload.action;
-        
-        // Check if the pull request action is closed and the pull request is merged
-        if (action === 'closed' && payload.pull_request.merged) {
-            core.debug('This workflow was triggered by a pull request merge.');
-            return true;
-        }
-    }
-
-    core.debug('This workflow was not triggered by a pull request merge.');
-    return false;
-}
-
-function isSemVarLabel(label) {
-    let labels = ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'];
-    return (labels.indexOf(label) != -1);
-}
-
-function incSemver(_semvar, label, identifier, branch_as_identifier, branch) {
-
-    if (identifier != "") {
-        _semvar.inc(label, identifier.replace(/[^a-zA-Z0-9-]+/g, ''))
-    } else {
-        if (branch_as_identifier) {
-            _semvar.inc(label, branch.replace(/[^a-zA-Z0-9-]+/g, ''))
-        } else {
-            _semvar.inc(label)
-        }
-    }
-    return _semvar;
-}
-
-async function getAndLogCommits() {
-    try {
-        var version = new semver.SemVer('0.0.0');
-        const token = core.getInput('personal_github_token', { required: true });
-        const identifier  = core.getInput('identifier', { required: false }) || "";
-        const branch_as_identifier  = core.getInput('branch_as_identifier', { required: false }) || false;
-        const include_commit_sha  = core.getInput('include_commit_sha', { required: false }) || false;
-
-        const octokit = github.getOctokit(token);
-
-        const branch = getCurrentBranch() || await getMergedPRBranch();
-
-        if (branch == null) {
-            core.debug(`No Branch Found, this will cause an error with generation, pulling from the Main/Master Branch and not the Branch for this Action.`);
-            return;
-        }
-
-        const commits = await octokit.rest.repos.listCommits({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            sha: branch,
-        });
-
-        const tags = await octokit.rest.repos.listTags({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-        });
-
-        // Process each commit for versioning cues
-        for (const commit of commits.data) {
-            core.debug(`Commit message: ${commit.commit.message}`);
-
-            // Look for semantic version cues in the commit message
-            const regex = /#(major|minor|patch|premajor|preminor|prepatch|prerelease)/ig;
-            const matches = commit.commit.message.match(regex);
-
-            if (matches && matches.length > 0) {
-                // For simplicity, we only look at the first match
-                let label = matches[0].toLowerCase().replace("#", "");
-                if (isSemVarLabel(label)) {
-                    version.inc(label);
-                } else {
-                    // Default to patch if no valid label is found
-                    version.inc('patch');
-                }
-            } else {
-                // Default to patch if no specific label is found
-                version.inc('patch');
-            }
-        }
-
-        // Now check for tags that might affect the current version
-        tags.data.forEach(tag => {
-            let parsedTagVersion = semver.parse(tag.name, { loose: true });
-            if (parsedTagVersion && semver.gt(parsedTagVersion, version)) {
-                version = parsedTagVersion;
-            }
-        });
-
-        if (branch_as_identifier && branch) {
-            version.prerelease = [branch.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
-        }
-
-        if (identifier) {
-            version.prerelease = [identifier.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
-        }
-
-        if (include_commit_sha) {
-            const sha = await getEventSHA();
-            version.build = [`sha.${sha}`];
-        }
-
-        let new_version = version.format();
-        core.exportVariable('version', new_version);
-        core.setOutput('version', new_version);
-    } catch (error) {
-        core.setFailed(`An error occurred: ${error.message}`);
-    }
-}
-
-
-getAndLogCommits()
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(4822);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
+//# sourceMappingURL=index.js.map
