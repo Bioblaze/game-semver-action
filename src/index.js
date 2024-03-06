@@ -76,17 +76,35 @@ function isSemVarLabel(label) {
     return (labels.indexOf(label) != -1);
 }
 
+function incSemver(_semvar, label, identifier, branch_as_identifier, branch) {
+
+    if (identifier != "") {
+        _semvar.inc(label, identifier.replace(/[^a-zA-Z0-9-]+/g, ''))
+    } else {
+        if (branch_as_identifier) {
+            _semvar.inc(label, branch.replace(/[^a-zA-Z0-9-]+/g, ''))
+        } else {
+            _semvar.inc(label)
+        }
+    }
+    return _semvar;
+}
+
 async function getAndLogCommits() {
     try {
-
         var version = new semver.SemVer('0.0.0');
-        const token = core.getInput('personal_github_token', { required: true })
+        const token = core.getInput('personal_github_token', { required: true });
+        const identifier  = core.getInput('identifier', { required: false }) || "";
+        const branch_as_identifier  = core.getInput('branch_as_identifier', { required: false }) || false;
+        const include_commit_sha  = core.getInput('include_commit_sha', { required: false }) || false;
+
         const octokit = github.getOctokit(token);
 
-        const branch = getCurrentBranch() || getMergedPRBranch() || getEventSHA();
+        const branch = getCurrentBranch() || await getMergedPRBranch();
 
         if (branch == null) {
-            core.debug(`No Branch Found, this will cause a error with generation, pulling from the Main/Master Branch and not the Branch for this Action.`);
+            core.debug(`No Branch Found, this will cause an error with generation, pulling from the Main/Master Branch and not the Branch for this Action.`);
+            return;
         }
 
         const commits = await octokit.rest.repos.listCommits({
@@ -95,53 +113,62 @@ async function getAndLogCommits() {
             sha: branch,
         });
 
-        // Attempt to find a tag pointing to this commit
         const tags = await octokit.rest.repos.listTags({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
         });
 
+        // Process each commit for versioning cues
         for (const commit of commits.data) {
-            // Logging the commit message
             core.debug(`Commit message: ${commit.commit.message}`);
 
-            const regex = /#\w+/ig;
+            // Look for semantic version cues in the commit message
+            const regex = /#(major|minor|patch|premajor|preminor|prepatch|prerelease)/ig;
             const matches = commit.commit.message.match(regex);
 
-            const tag = tags.data.find(t => t.commit.sha === commit.sha);
-            if (tag) {
-                core.debug(`Tag: ${tag.name}`);
-                let label = tag.name.toLowerCase();
+            if (matches && matches.length > 0) {
+                // For simplicity, we only look at the first match
+                let label = matches[0].toLowerCase().replace("#", "");
                 if (isSemVarLabel(label)) {
-                    version.inc(label)
+                    version.inc(label);
                 } else {
-                    let semchk = semver.parse(tag.name.replace(/^refs\/tags\//g, ''), { loose: true });
-                    if (semchk != null) {
-                        if (semver.rcompare(version.version, semchk.version)) {
-                            core.debug(`Setting Version: ${semchk.version}`);
-                            version = semchk;
-                        }
-                    } else if (matches.length > 0) {
-                        let label = matches[0].toLowerCase().replace("#", "");
-                        version.inc(label)
-                    } else {
-                        version.inc('patch')
-                    }
+                    // Default to patch if no valid label is found
+                    version.inc('patch');
                 }
             } else {
-                if (matches.length > 0) {
-                    let label = matches[0].toLowerCase().replace("#", "");
-                    version.inc(label)
-                } else {
-                    version.inc('patch')
-                }
+                // Default to patch if no specific label is found
+                version.inc('patch');
             }
         }
-        core.exportVariable('version', version.version)
-        core.setOutput('version', version.version)
+
+        // Now check for tags that might affect the current version
+        tags.data.forEach(tag => {
+            let parsedTagVersion = semver.parse(tag.name, { loose: true });
+            if (parsedTagVersion && semver.gt(parsedTagVersion, version)) {
+                version = parsedTagVersion;
+            }
+        });
+
+        if (branch_as_identifier && branch) {
+            version.prerelease = [branch.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
+        }
+
+        if (identifier) {
+            version.prerelease = [identifier.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
+        }
+
+        if (include_commit_sha) {
+            const sha = await getEventSHA();
+            version.build = [`sha.${sha}`];
+        }
+
+        let new_version = version.format();
+        core.exportVariable('version', new_version);
+        core.setOutput('version', new_version);
     } catch (error) {
         core.setFailed(`An error occurred: ${error.message}`);
     }
 }
+
 
 getAndLogCommits()
