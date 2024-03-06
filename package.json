@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "ncc build ./src/index.js -o dist --minify"
+    "build": "ncc build ./src/index.js -o dist"
   },
   "keywords": [],
   "author": "",
