@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "ncc build ./src/index.js -o dist --minify"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +13,8 @@
     "@actions/core": "^1.10.1",
     "@actions/github": "^6.0.0",
     "semver": "^7.6.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.0"
   }
 }
