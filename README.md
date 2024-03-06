@@ -27,7 +27,7 @@ Example: 0.0.298-alpha+build.ee9050469dca1f407c6f21361054e05181d6a9e9
 steps:
   - name: Generate Semver/w Build SHA
     id: semver
-    uses: Bioblaze/game-semver-action@v1
+    uses: Bioblaze/game-semver-action@v9
     with:
       personal_github_token: ${{ secrets.PGITHUB_TOKEN }}
       include_commit_sha: true
@@ -46,7 +46,7 @@ To use this output in another step in your workflow, you can reference it by the
 steps:
   - name: Generate Semver
     id: semver
-    uses: Bioblaze/game-semver-action@v1
+    uses: Bioblaze/game-semver-action@v9
     with:
       personal_github_token: ${{ secrets.PGITHUB_TOKEN }}
 
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Generate Semver
-        uses: Bioblaze/game-semver-action@v1
+        uses: Bioblaze/game-semver-action@v9
         with:
           personal_github_token: ${{ secrets.PGITHUB_TOKEN }}
           identifier: 'beta'
