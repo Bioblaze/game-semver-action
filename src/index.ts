@@ -156,15 +156,15 @@ async function getAndLogCommits(): Promise<void> {
             version.prerelease = [identifier.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
         }
 
+        let newVersion = version.format();
+
         if (includeCommitSha) {
             const sha = getEventSHA();
             core.debug(`SHA: ${sha}`);
             if (sha) {
-                version.build = [`build.${sha}`];
+                newVersion = `${newVersion}+build.${sha}`
             }
         }
-
-        let newVersion = version.format();
         core.exportVariable('version', newVersion);
         core.setOutput('version', newVersion);
     } catch (error: unknown) {
