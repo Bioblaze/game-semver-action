@@ -1,0 +1,25 @@
+name: 'GameDev Semver Action'
+description: 'utomate semantic versioning in your projects with commit-driven precision, perfect for game development and beyond.'
+author: 'Randolph William Aarseth II'
+inputs:
+  personal_github_token:
+    description: 'Token to get tags and commits from the repo. Pass in using `secrets.PGITHUB_TOKEN`.'
+    required: true
+  identifier:
+    description: 'An optional identifier for the version (e.g., beta, alpha).'
+    required: false
+    default: ''
+  branch_as_identifier:
+    description: 'Use the branch name as an identifier for prerelease versions.'
+    required: false
+    default: 'false'
+  include_commit_sha:
+    description: 'Include the commit SHA in the version as build metadata.'
+    required: false
+    default: 'false'
+runs:
+  using: 'node20'
+  main: 'src/index.js'
+branding:
+  icon: 'arrow-up-right'
+  color: 'blue'

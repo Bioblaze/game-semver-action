@@ -1,5 +1,5 @@
 {
-  "name": "@divine-games/game-semvar-action",
+  "name": "game-semver-action",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
