@@ -10282,7 +10282,7 @@ const { Blob, File: NativeFile } = __nccwpck_require__(4300)
 const { kBodyUsed } = __nccwpck_require__(6729)
 const assert = __nccwpck_require__(9491)
 const { isErrored } = __nccwpck_require__(4765)
-const { isUint8Array, isArrayBuffer } = __nccwpck_require__(9830)
+const { isUint8Array, isArrayBuffer } = __nccwpck_require__(4978)
 const { File: UndiciFile } = __nccwpck_require__(5240)
 const { parseMIMEType, serializeAMimeType } = __nccwpck_require__(5613)
 
@@ -16652,7 +16652,7 @@ const { getGlobalOrigin } = __nccwpck_require__(3670)
 const { performance } = __nccwpck_require__(4074)
 const { isBlobLike, toUSVString, ReadableStreamFrom } = __nccwpck_require__(4765)
 const assert = __nccwpck_require__(9491)
-const { isUint8Array } = __nccwpck_require__(9830)
+const { isUint8Array } = __nccwpck_require__(4978)
 
 // https://nodejs.org/api/crypto.html#determining-if-crypto-support-is-unavailable
 /** @type {import('crypto')|undefined} */
@@ -32488,6 +32488,14 @@ module.exports = eval("require")("undici");
 
 /***/ }),
 
+/***/ 4978:
+/***/ ((module) => {
+
+module.exports = eval("require")("util/types");
+
+
+/***/ }),
+
 /***/ 9491:
 /***/ ((module) => {
 
@@ -32685,14 +32693,6 @@ module.exports = require("url");
 
 "use strict";
 module.exports = require("util");
-
-/***/ }),
-
-/***/ 9830:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("util/types");
 
 /***/ }),
 
