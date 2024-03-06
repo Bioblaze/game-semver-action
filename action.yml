@@ -1,5 +1,5 @@
 name: 'GameDev Semver Action'
-description: 'utomate semantic versioning in your projects with commit-driven precision, perfect for game development and beyond.'
+description: 'Automate semantic versioning in your projects with commit-driven precision, perfect for game development and beyond.'
 author: 'Randolph William Aarseth II'
 inputs:
   personal_github_token:
@@ -17,6 +17,11 @@ inputs:
     description: 'Include the commit SHA in the version as build metadata.'
     required: false
     default: 'false'
+outputs:
+  version:
+    description: "version generated from all commits to repo."
+  build_version:
+    description: "includes build SHA added onto the version"
 runs:
   using: 'node16'
   main: 'dist/index.js'
