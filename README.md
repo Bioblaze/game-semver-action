@@ -19,6 +19,23 @@ The `Game-Semver-Action` is a GitHub Action designed to automatically generate a
 
 ## Outputs
 
+### `build_version`
+
+Example: 0.0.298-alpha+build.ee9050469dca1f407c6f21361054e05181d6a9e9
+
+```yaml
+steps:
+  - name: Generate Semver/w Build SHA
+    id: semver
+    uses: Bioblaze/game-semver-action@v1
+    with:
+      personal_github_token: ${{ secrets.PGITHUB_TOKEN }}
+      include_commit_sha: true
+
+  - name: Use the Generated Version
+    run: echo "The new version is ${{ steps.semver.outputs.build_version }}"
+```
+
 ### `version`
 
 The generated semantic version based on your commit history and action inputs. This version can be used in subsequent workflow steps, for example, to tag a release or to update version files within your project.

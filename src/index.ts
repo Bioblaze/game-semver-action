@@ -156,17 +156,23 @@ async function getAndLogCommits(): Promise<void> {
             version.prerelease = [identifier.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
         }
 
-        let newVersion = version.format();
-
+        let NewVersion = version.format();
+        var newBuildVersion = NewVersion;
         if (includeCommitSha) {
             const sha = getEventSHA();
             core.debug(`SHA: ${sha}`);
             if (sha) {
-                newVersion = `${newVersion}+build.${sha}`
+                version.build = [`build.${sha}`]
+                newBuildVersion = `${NewVersion}+build.${sha}`
             }
         }
-        core.exportVariable('version', newVersion);
-        core.setOutput('version', newVersion);
+        
+        // https://github.com/npm/node-semver/issues/685
+        //let newVersion = version.format();
+        core.exportVariable('version', NewVersion);
+        core.setOutput('version', NewVersion);
+        core.exportVariable('build_version', newBuildVersion);
+        core.setOutput('build_version', newBuildVersion);
     } catch (error: unknown) {
         if (error instanceof Error) {
             core.setFailed(`An error occurred: ${error.message}`);
