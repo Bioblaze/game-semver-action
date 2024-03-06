@@ -67,6 +67,32 @@ function isSemVarLabel(label: string): label is ReleaseType {
     return ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'].includes(label);
 }
 
+async function getAllCommits(octokit: any, branch: string) {
+    try {
+      
+      const commits = [];
+      
+      for await (const response of octokit.paginate.iterator(octokit.rest.repos.listCommits, {
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        sha: branch,
+      })) {
+        // Each response is an array of commits, push them into the commits array
+        commits.push(...response.data);
+      }
+  
+      return commits;
+    } catch (error) {
+      if (error instanceof Error) {
+        core.setFailed(`An error occurred: ${error.message}`);
+      } else {
+        core.setFailed(`An unknown error occurred`);
+      }
+      return [];
+    }
+  }
+
+
 async function getAndLogCommits(): Promise<void> {
     try {
         let version = new SemVer('0.0.0');
@@ -74,29 +100,29 @@ async function getAndLogCommits(): Promise<void> {
         const identifier = core.getInput('identifier', { required: false }) || "";
         const branchAsIdentifier = core.getInput('branch_as_identifier', { required: false }) === 'true';
         const includeCommitSha = core.getInput('include_commit_sha', { required: false }) === 'true';
+        core.debug(`Debug Settings: \n\t${identifier}\n\t${branchAsIdentifier}\n\t${includeCommitSha}`);
 
         const octokit = github.getOctokit(token);
 
-        const branch = getCurrentBranch() || await getMergedPRBranch();
+        const branch = getCurrentBranch() || getMergedPRBranch();
+        core.debug(`Branch: ${branch}`);
 
         if (!branch) {
             core.debug(`No Branch Found, this will cause an error with generation, pulling from the Main/Master Branch and not the Branch for this Action.`);
             return;
         }
 
-        const commits = await octokit.rest.repos.listCommits({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            sha: branch,
-        });
+        const commits = await getAllCommits(octokit, branch);
 
         const tags = await octokit.rest.repos.listTags({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
         });
 
+        core.debug(`Total Commits: ${commits.length}`);
+
         // Process each commit for versioning cues
-        for (const commit of commits.data) {
+        for (const commit of commits) {
             core.debug(`Commit message: ${commit.commit.message}`);
 
             const regex = /#(major|minor|patch|premajor|preminor|prepatch|prerelease)/ig;
@@ -131,9 +157,10 @@ async function getAndLogCommits(): Promise<void> {
         }
 
         if (includeCommitSha) {
-            const sha = await getEventSHA();
+            const sha = getEventSHA();
+            core.debug(`SHA: ${sha}`);
             if (sha) {
-                version.build = [`sha.${sha}`];
+                version.build = [`build.${sha}`];
             }
         }
 

@@ -38,6 +38,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const github = __importStar(__nccwpck_require__(5438));
 const core = __importStar(__nccwpck_require__(2186));
@@ -102,6 +109,49 @@ function isPullRequestMerge() {
 function isSemVarLabel(label) {
     return ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'].includes(label);
 }
+function getAllCommits(octokit, branch) {
+    var _a, e_1, _b, _c;
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const commits = [];
+            try {
+                for (var _d = true, _e = __asyncValues(octokit.paginate.iterator(octokit.rest.repos.listCommits, {
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    sha: branch,
+                })), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        // Each response is an array of commits, push them into the commits array
+                        commits.push(...response.data);
+                    }
+                    finally {
+                        _d = true;
+                    }
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return commits;
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                core.setFailed(`An error occurred: ${error.message}`);
+            }
+            else {
+                core.setFailed(`An unknown error occurred`);
+            }
+            return [];
+        }
+    });
+}
 function getAndLogCommits() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -110,23 +160,22 @@ function getAndLogCommits() {
             const identifier = core.getInput('identifier', { required: false }) || "";
             const branchAsIdentifier = core.getInput('branch_as_identifier', { required: false }) === 'true';
             const includeCommitSha = core.getInput('include_commit_sha', { required: false }) === 'true';
+            core.debug(`Debug Settings: \n\t${identifier}\n\t${branchAsIdentifier}\n\t${includeCommitSha}`);
             const octokit = github.getOctokit(token);
-            const branch = getCurrentBranch() || (yield getMergedPRBranch());
+            const branch = getCurrentBranch() || getMergedPRBranch();
+            core.debug(`Branch: ${branch}`);
             if (!branch) {
                 core.debug(`No Branch Found, this will cause an error with generation, pulling from the Main/Master Branch and not the Branch for this Action.`);
                 return;
             }
-            const commits = yield octokit.rest.repos.listCommits({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                sha: branch,
-            });
+            const commits = yield getAllCommits(octokit, branch);
             const tags = yield octokit.rest.repos.listTags({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
             });
+            core.debug(`Total Commits: ${commits.length}`);
             // Process each commit for versioning cues
-            for (const commit of commits.data) {
+            for (const commit of commits) {
                 core.debug(`Commit message: ${commit.commit.message}`);
                 const regex = /#(major|minor|patch|premajor|preminor|prepatch|prerelease)/ig;
                 const matches = commit.commit.message.match(regex);
@@ -157,9 +206,10 @@ function getAndLogCommits() {
                 version.prerelease = [identifier.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
             }
             if (includeCommitSha) {
-                const sha = yield getEventSHA();
+                const sha = getEventSHA();
+                core.debug(`SHA: ${sha}`);
                 if (sha) {
-                    version.build = [`sha.${sha}`];
+                    version.build = [`build.${sha}`];
                 }
             }
             let newVersion = version.format();
