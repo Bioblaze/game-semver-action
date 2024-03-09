@@ -5,7 +5,8 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "package": "ncc build --source-map --license licenses.txt"
+    "package": "ncc build --source-map --license licenses.txt",
+    "release": "npm run build && npm run package"
   },
   "repository": {
     "type": "git",

@@ -148,6 +148,9 @@ async function getAndLogCommits(): Promise<void> {
             }
         });
 
+        let simpleVersion = version.format()
+        let revisionVersion = `${simpleVersion}.0`;
+
         if (branchAsIdentifier && branch) {
             version.prerelease = [branch.trim().replace(/[^a-zA-Z0-9-]+/g, '')];
         }
@@ -173,6 +176,10 @@ async function getAndLogCommits(): Promise<void> {
         core.setOutput('version', NewVersion);
         core.exportVariable('build_version', newBuildVersion);
         core.setOutput('build_version', newBuildVersion);
+        core.exportVariable('revision_version', revisionVersion);
+        core.setOutput('revision_version', revisionVersion);
+        core.exportVariable('simple_version', simpleVersion);
+        core.setOutput('simple_version', simpleVersion);
     } catch (error: unknown) {
         if (error instanceof Error) {
             core.setFailed(`An error occurred: ${error.message}`);

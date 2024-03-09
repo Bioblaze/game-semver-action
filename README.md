@@ -23,6 +23,15 @@ The `Game-Semver-Action` is a GitHub Action designed to automatically generate a
 
 Example: 0.0.298-alpha+build.ee9050469dca1f407c6f21361054e05181d6a9e9
 
+### `simple_version`
+
+Example: 0.0.298
+
+### `revision_version`
+
+Example: 0.0.298.0
+
+
 ```yaml
 steps:
   - name: Generate Semver/w Build SHA
@@ -37,6 +46,8 @@ steps:
 ```
 
 ### `version`
+
+Example: 0.0.298-alpha
 
 The generated semantic version based on your commit history and action inputs. This version can be used in subsequent workflow steps, for example, to tag a release or to update version files within your project.
 

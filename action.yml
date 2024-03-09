@@ -19,9 +19,13 @@ inputs:
     default: 'false'
 outputs:
   version:
-    description: "version generated from all commits to repo."
+    description: "version generated from all commits to repo"
   build_version:
     description: "includes build SHA added onto the version"
+  revision_version:
+    description: "a Windows assembly revision"
+  simple_version:
+    description: "a simple version without prerelease added"
 runs:
   using: 'node16'
   main: 'dist/index.js'
